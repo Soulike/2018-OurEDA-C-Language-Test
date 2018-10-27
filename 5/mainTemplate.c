@@ -1,5 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<math.h>
+#include<string.h>
 // 此处可以添加你自己需要的头文件
 
 struct goodPeopleCard
@@ -17,6 +19,7 @@ struct node
 
 // 函数声明部分开始
 struct node* initCardList();
+struct node* getNode(struct node * head, struct node * tail, int index);
 int insertCard(struct node* head, struct node* tail, int index, struct goodPeopleCard* newCard);
 int deleteCardByNode(struct node* node);
 int deleteCardByName(struct node* head, char* name);
@@ -24,21 +27,82 @@ int deleteCardByDate(struct node* head, char* date);
 struct node* searchCardByName(struct node* head, char* name);
 struct node* searchCardByDate(struct node* head, char* date);
 void clear(struct node* head);
-struct goodPeopleCard* pop_back();
-void push_back(struct goodPeopleCard* newCard);
-struct goodPeopleCard* pop_front();
-void push_front(struct goodPeopleCard* newCard);
+void destoryCardList(struct node* head);
+struct goodPeopleCard* pop_back(struct node * tail);
+void push_back(struct node * tail, struct goodPeopleCard* newCard);
+struct goodPeopleCard* pop_front(struct node * head);
+void push_front(struct node * head, struct goodPeopleCard* newCard);
 void printCard(struct goodPeopleCard* card);
 // 函数声明部分结束
 
-// 请在完成函数实现后完成 main 函数
+// typedef 部分，可用可不用
+typedef struct node node;
+typedef node* nodePtr;
+typedef struct goodPeopleCard goodPeopleCard;
+typedef goodPeopleCard* goodPeopleCardPtr;
+
 int main()
 {
+	int inputNum = 0;
+	scanf("%d", &inputNum);
 
+	nodePtr head = initCardList();
+	nodePtr tail = head->next; // 获得 tail 的唯一办法。在链表构造完成后head的后面就是tail
+
+	goodPeopleCardPtr card = NULL;
+
+	for (int i = 0; i < inputNum; i++)
+	{
+		card = (goodPeopleCardPtr)malloc(sizeof(goodPeopleCard));
+		scanf("%s %s", &card->name, &card->date);
+		if (i % 2 == 0) // 偶数放在头
+		{
+			push_front(head, card);
+		}
+		else // 奇数放在尾
+		{
+			push_back(tail, card);
+		}
+	}
+
+	char name[20];
+	char date[9];
+
+	scanf("%s", name);
+
+	deleteCardByName(head, name);
+
+	scanf("%s", date);
+
+	deleteCardByDate(head, date);
+
+	for (int i = 0;; i++)
+	{
+		if (i % 2 == 0)// 偶数，输出第一个
+		{
+			card = pop_front(head);
+		}
+		else// 奇数，输出最后一个
+		{
+			card = pop_back(tail);
+		}
+
+		if (card == NULL)
+		{
+			break;
+		}
+		else
+		{
+			printCard(card);
+			free(card); // 这里的 card 不能随着链表一起释放，因此必须手动释放
+		}
+	}
+
+	destoryCardList(head);
 }
 
 
-// 请按要求实现以下函数
+// 请按要求实现以下空白函数
 
 
 /*
@@ -55,13 +119,69 @@ int main()
 */
 struct node* initCardList()
 {
-	
+	nodePtr head = (nodePtr)malloc(sizeof(node));
+	nodePtr tail = (nodePtr)malloc(sizeof(node));
+	head->card = NULL;
+	tail->card = NULL;
+	head->prev = NULL;
+	head->next = tail;
+	tail->prev = head;
+	tail->next = NULL;
+	return head;
+}
+
+/*
+参数：链表头结点 head，链表尾结点 tail，被获取结点位置 index
+
+返回值：被查找的结点指针，如果找不到返回 NULL
+
+函数执行操作：查找并返回 index 位置指定的结点指针
+
+其他说明：
+index 可正可负。为正时从头开始计算，为负时从尾开始计算。例如对于以下链表
+head <--> node1 <--> node2 <--> node3 <--> node4 <--> tail
+index = 0 代表 node1 的位置， index = 1 代表 node2 的位置， index = -1 代表 node4 的位置，index = -2 代表 node3 的位置
+*/
+struct node* getNode(struct node * head, struct node * tail, int index)
+{
+	nodePtr currentNode = NULL;
+	if (head != NULL && index >= 0) // index 是正数，就从头开始找
+	{
+		currentNode = head;
+		for (int i = 0; i <= index; i++)
+		{
+			currentNode = currentNode->next;
+			if (currentNode->next == NULL) // 如果找到了 tail，就返回 NULL
+			{
+				return NULL;
+			}
+		}
+	}
+	else if (tail != NULL && index < 0) // index 是负数，就从尾开始找
+	{
+		index = -index;
+		currentNode = tail;
+		for (int i = 0; i < index; i++)
+		{
+			currentNode = currentNode->prev;
+			if (currentNode->prev == NULL) // 如果找到了 head，就返回 NULL
+			{
+				return NULL;
+			}
+		}
+	}
+	else // 混着搭配没法找，就返回失败
+	{
+		return NULL;
+	}
+
+	return currentNode;
 }
 
 /*
 参数：链表头指针 head，链表尾指针 tail，插入位置 index，新好人卡指针 newCard
 
-返回值：0或者1。1代表插入成功，0代表插入失败（index过大或过小）
+返回值：0或者1。1代表插入成功，0代表插入失败（index过大或过小或无法实现定位)
 
 函数执行操作：把 newCard 指针包装成结点，插入到 index 指定的位置
 
@@ -69,12 +189,16 @@ struct node* initCardList()
 index 可正可负。为正时从头开始计算，为负时从尾开始计算。例如对于以下链表
 head <--> node1 <--> node2 <--> node3 <--> node4 <--> tail
 index = 0 代表 node1 的位置， index = 1 代表 node2 的位置， index = -1 代表 node4 的位置，index = -2 代表 node3 的位置
+
 比如我传入 index = 1，上述链表就会变为
 head <--> node1 <--> newCardNode <--> node2 <--> node3 <--> node4 <--> tail
+
+再比如我传入 index = -1，上述链表就会变为
+head <--> node1 <--> node2 <--> node3 <--> node4 <--> newNode <--> tail
 */
 int insertCard(struct node* head, struct node* tail, int index, struct goodPeopleCard* newCard)
 {
-	return 0;
+	// 你的实现
 }
 
 /*
@@ -88,31 +212,7 @@ int insertCard(struct node* head, struct node* tail, int index, struct goodPeopl
 */
 int deleteCardByNode(struct node* node)
 {
-	return 0;
-}
-
-/*
-参数：链表头指针 head，要删除的名字 name
-
-返回值：0或者1。1代表删除成功，0代表没找到
-
-函数执行操作：把首个具有发卡人姓名为name的node结点从所在链表中删除，并释放该结点占用的所有内存
-*/
-int deleteCardByName(struct node* head, char* name)
-{
-	return 0;
-}
-
-/*
-参数：链表头指针 head，要删除的名字 name
-
-返回值：0或者1。1代表删除成功，0代表没找到
-
-函数执行操作：把首个具有发卡日期为date的node结点从所在链表中删除，并释放该结点占用的所有内存
-*/
-int deleteCardByDate(struct node* head, char* date)
-{
-	return 0;
+	// 你的实现
 }
 
 /*
@@ -124,7 +224,7 @@ int deleteCardByDate(struct node* head, char* date)
 */
 struct node* searchCardByName(struct node* head, char* name)
 {
-	return NULL;
+	// 你的实现
 }
 
 /*
@@ -136,7 +236,52 @@ struct node* searchCardByName(struct node* head, char* name)
 */
 struct node* searchCardByDate(struct node* head, char* date)
 {
-	return NULL;
+	nodePtr currentNode = head;
+	while (currentNode->card == NULL || strcmp(date, currentNode->card->date) != 0) // 给 strcmp 传一个 NULL 是不确定行为，不作死
+	{
+		currentNode = currentNode->next;
+	}
+
+	if (currentNode == head)
+	{
+		return NULL;
+	}
+	else
+	{
+		return currentNode;
+	}
+}
+
+/*
+参数：链表头指针 head，要删除的名字 name
+
+返回值：0或者1。1代表删除成功，0代表没找到
+
+函数执行操作：把首个具有发卡人姓名为name的node结点从所在链表中删除，并释放该结点占用的所有内存
+*/
+int deleteCardByName(struct node* head, char* name)
+{
+	// 你的实现
+}
+
+/*
+参数：链表头指针 head，要删除的名字 name
+
+返回值：0或者1。1代表删除成功，0代表没找到
+
+函数执行操作：把首个具有发卡日期为date的node结点从所在链表中删除，并释放该结点占用的所有内存
+*/
+int deleteCardByDate(struct node* head, char* date)
+{
+	nodePtr node = searchCardByDate(head, date);
+	if (node == NULL)
+	{
+		return 0;
+	}
+	else
+	{
+		return deleteCardByNode(node);
+	}
 }
 
 /*
@@ -148,7 +293,7 @@ struct node* searchCardByDate(struct node* head, char* date)
 */
 void clear(struct node* head)
 {
-
+	// 你的实现
 }
 
 /*
@@ -160,7 +305,9 @@ void clear(struct node* head)
 */
 void destoryCardList(struct node* head)
 {
-
+	clear(head);
+	free(head->next);
+	free(head);
 }
 
 /*
@@ -172,9 +319,9 @@ void destoryCardList(struct node* head)
 
 其他说明：如果链表为空，返回 NULL
 */
-struct goodPeopleCard* pop_back()
+struct goodPeopleCard* pop_back(struct node * tail)
 {
-	return NULL;
+	// 你的实现
 }
 
 /*
@@ -184,9 +331,9 @@ struct goodPeopleCard* pop_back()
 
 函数执行操作：把一个新的好人卡指针包装成结点插入链表的最后一个位置
 */
-void push_back(struct goodPeopleCard* newCard)
+void push_back(struct node * tail, struct goodPeopleCard* newCard)
 {
-
+	insertCard(NULL, tail, -1, newCard);
 }
 
 /*
@@ -198,9 +345,9 @@ void push_back(struct goodPeopleCard* newCard)
 
 其他说明：如果链表为空，返回 NULL
 */
-struct goodPeopleCard* pop_front()
+struct goodPeopleCard* pop_front(struct node * head)
 {
-	return NULL;
+	// 你的实现
 }
 
 /*
@@ -210,9 +357,9 @@ struct goodPeopleCard* pop_front()
 
 函数执行操作：把一个新的好人卡指针包装成结点插入链表的第一个位置
 */
-void push_front(struct goodPeopleCard * newCard)
+void push_front(struct node * head, struct goodPeopleCard * newCard)
 {
-
+	insertCard(head, NULL, 0, newCard);
 }
 
 /*
