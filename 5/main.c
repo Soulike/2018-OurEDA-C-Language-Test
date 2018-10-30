@@ -42,7 +42,15 @@ typedef node* nodePtr;
 typedef struct goodPeopleCard goodPeopleCard;
 typedef goodPeopleCard* goodPeopleCardPtr;
 
-// 请在完成函数实现后完成 main 函数
+/*
+main 函数运行过程如下
+1. 输入时结点交替在头尾位置放入链表（即在头插入->在尾插入->在头插入->在尾插入->…）；
+2. 输入一个名字，用名字为目标删除其中一个结点；
+3. 输入一个日期，用日期为目标删除其中一个结点；
+4. 输出时交替在头尾位置输出（即输出第一个->输出最后一个->输出第一个->输出最后一个->…），要求输出完成后链表只剩下不承载数据的头尾结点；
+5. 在程序退出之前，不承载数据的头尾结点也被删除。
+*/
+
 int main()
 {
 	int inputNum = 0;
@@ -372,7 +380,7 @@ int deleteCardByDate(struct node* head, char* date)
 
 返回值：无
 
-函数执行操作：清空链表，只留下头和尾
+函数执行操作：清空链表，只留下不承载数据的头和尾
 */
 void clear(struct node* head)
 {
