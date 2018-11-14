@@ -298,9 +298,11 @@ struct node* searchCardByName(struct node* head, char* name)
 	while (currentNode->card == NULL || strcmp(name, currentNode->card->name) != 0) // 给 strcmp 传一个 NULL 是不确定行为，不作死
 	{
 		currentNode = currentNode->next;
+		if (currentNode == NULL)
+			break;
 	}
 
-	if (currentNode == head)
+	if (currentNode == head || currentNode == NULL)
 	{
 		return NULL;
 	}
@@ -323,9 +325,11 @@ struct node* searchCardByDate(struct node* head, char* date)
 	while (currentNode->card == NULL || strcmp(date, currentNode->card->date) != 0) // 给 strcmp 传一个 NULL 是不确定行为，不作死
 	{
 		currentNode = currentNode->next;
+		if (currentNode == NULL)
+			break;
 	}
 
-	if (currentNode == head)
+	if (currentNode == head || currentNode == NULL)
 	{
 		return NULL;
 	}
